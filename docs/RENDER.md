@@ -1,53 +1,48 @@
-# SITE ACM Student Chapter — Render Deployment Guide
+# SITE ACM Student Chapter — Render & Backend Deployment Architecture
 
-This guide details how to deploy the SITE ACM project on Render as a Static Site or backend service.
+## Architecture Notice
+
+> [!NOTE]
+> **Render is NOT required** for the default SITE ACM application architecture.
+> 
+> The application uses **Supabase** directly as its Serverless Backend-as-a-Service (BaaS) for PostgreSQL database management, Row Level Security (RLS), Supabase Authentication, and Storage.
+> 
+> The recommended production deployment stack is:
+> - **Vercel** or **Netlify** → Frontend Single Page Application (SPA)
+> - **Supabase** → Backend / Database / Authentication / Storage
 
 ---
 
-## Deploying as a Static Site on Render
+## Optional Render Deployment Options
+
+If you still wish to host the static frontend on Render, or deploy a custom Node.js backend proxy in the future, follow the instructions below.
+
+### Option A: Deploying Frontend as a Static Site on Render
 
 1. Log into [Render Dashboard](https://dashboard.render.com).
 2. Click **New + -> Static Site**.
-3. Connect repository `Klavanya0704/ACM`.
-4. Configure:
+3. Connect your GitHub repository `Klavanya0704/ACM`.
+4. Configure settings:
    - **Name**: `site-acm-website`
-   - **Branch**: `main`
    - **Build Command**: `npm run build`
    - **Publish Directory**: `dist`
 5. Add Environment Variables:
-   - `VITE_SUPABASE_URL`: `https://your-project.supabase.co`
-   - `VITE_SUPABASE_ANON_KEY`: `your-anon-public-key`
-6. Click **Create Static Site**.
+   - `VITE_SUPABASE_URL`: Your Supabase URL
+   - `VITE_SUPABASE_ANON_KEY`: Your Supabase Anon Key
+6. Configure Rewrite Rule:
+   - **Source**: `/*`
+   - **Destination**: `/index.html`
 
----
+The repository root includes `render.yaml` for this static deployment setup.
 
-## Native `render.yaml` Blueprint
+### Option B: Optional Custom Backend Web Service
 
-The project root includes `render.yaml` for 1-click Render blueprint deployment:
-```yaml
-services:
-  - type: web
-    name: site-acm-website
-    env: static
-    buildCommand: npm run build
-    staticPublishPath: ./dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-```
-
----
-
-## Optional Backend Proxy / Health Endpoint
-
-If deploying a custom backend API on Render (Node.js/Express):
-- Configure environment variable `PORT=5000`
-- Expose GET `/health` endpoint returning:
+If you build a custom Node.js server in the future:
+- Expose a `GET /health` endpoint returning:
   ```json
   {
     "status": "ok",
     "service": "SITE ACM Backend"
   }
   ```
-- Update frontend environment variable `VITE_API_BASE_URL` to point to `https://<your-render-service>.onrender.com`.
+- Store `SUPABASE_SERVICE_ROLE_KEY` in Render environment variables (Server-side ONLY).
