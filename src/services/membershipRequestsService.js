@@ -36,7 +36,7 @@ export const membershipRequestsService = {
         const { data, error } = await supabase
           .from('membership_requests')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('submitted_at', { ascending: false });
 
         if (!error && data) {
           return data;
@@ -52,17 +52,18 @@ export const membershipRequestsService = {
   async submitRequest(requestData) {
     const newRequest = {
       full_name: requestData.full_name,
-      institution: requestData.institution || 'Sasi Institute of Technology & Engineering',
+      college: requestData.institution || 'Sasi Institute of Technology & Engineering',
       roll_number: requestData.roll_number,
       email: requestData.email,
-      phone: requestData.phone,
+      phone: requestData.phone || '',
       department: requestData.department,
       year_of_study: requestData.year_of_study,
-      acm_membership_status: requestData.acm_membership_status,
-      interest_reason: requestData.interest_reason || '',
-      areas_of_interest: requestData.areas_of_interest || [],
+      acm_status: requestData.acm_membership_status || 'Not an ACM Member',
+      interests: requestData.areas_of_interest || [],
+      statement: requestData.interest_reason || '',
+      consent: requestData.consent !== undefined ? Boolean(requestData.consent) : true,
       status: 'pending',
-      created_at: new Date().toISOString(),
+      submitted_at: new Date().toISOString(),
     };
 
     if (API_BASE_URL) {
@@ -102,7 +103,7 @@ export const membershipRequestsService = {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('membership_requests')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update({ status: newStatus })
         .eq('id', id)
         .select();
 
@@ -113,7 +114,6 @@ export const membershipRequestsService = {
       const index = requests.findIndex(r => r.id === id);
       if (index !== -1) {
         requests[index].status = newStatus;
-        requests[index].updated_at = new Date().toISOString();
         localStorage.setItem(LOCAL_REQUESTS_KEY, JSON.stringify(requests));
         return requests[index];
       }

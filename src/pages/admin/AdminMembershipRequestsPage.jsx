@@ -219,12 +219,12 @@ export default function AdminMembershipRequestsPage() {
 
                     {/* ACM Status */}
                     <td className="py-4 px-4 font-medium text-slate-700">
-                      {req.acm_membership_status}
+                      {req.acm_membership_status || req.acm_status}
                     </td>
 
                     {/* Date */}
                     <td className="py-4 px-4 text-slate-500 whitespace-nowrap">
-                      {req.created_at ? new Date(req.created_at).toLocaleDateString() : 'Recent'}
+                      {req.submitted_at || req.created_at ? new Date(req.submitted_at || req.created_at).toLocaleDateString() : 'Recent'}
                     </td>
 
                     {/* Status Pill */}
@@ -311,8 +311,8 @@ export default function AdminMembershipRequestsPage() {
               </div>
 
               <div className="bg-slate-50 p-3.5 rounded-2xl space-y-1">
-                <span className="text-slate-400 font-bold uppercase text-[10px]">Institution</span>
-                <div className="font-semibold text-slate-900">{activeRequest.institution}</div>
+                <span className="text-slate-400 font-bold uppercase text-[10px]">Institution / College</span>
+                <div className="font-semibold text-slate-900">{activeRequest.college || activeRequest.institution}</div>
               </div>
 
               <div className="bg-slate-50 p-3.5 rounded-2xl space-y-1">
@@ -322,7 +322,7 @@ export default function AdminMembershipRequestsPage() {
 
               <div className="bg-slate-50 p-3.5 rounded-2xl space-y-1">
                 <span className="text-slate-400 font-bold uppercase text-[10px]">Phone</span>
-                <div className="font-semibold text-slate-900">{activeRequest.phone}</div>
+                <div className="font-semibold text-slate-900">{activeRequest.phone || 'N/A'}</div>
               </div>
 
               <div className="bg-slate-50 p-3.5 rounded-2xl space-y-1">
@@ -339,15 +339,15 @@ export default function AdminMembershipRequestsPage() {
             {/* ACM Status */}
             <div className="bg-blue-50/80 p-4 rounded-2xl border border-blue-100 text-xs space-y-1">
               <span className="text-[10px] font-bold text-[#0066CC] uppercase">ACM Membership Status</span>
-              <div className="font-extrabold text-[#071A3D] text-sm">{activeRequest.acm_membership_status}</div>
+              <div className="font-extrabold text-[#071A3D] text-sm">{activeRequest.acm_status || activeRequest.acm_membership_status}</div>
             </div>
 
             {/* Areas of Interest */}
-            {activeRequest.areas_of_interest && activeRequest.areas_of_interest.length > 0 && (
+            {((activeRequest.interests && activeRequest.interests.length > 0) || (activeRequest.areas_of_interest && activeRequest.areas_of_interest.length > 0)) && (
               <div className="space-y-2">
                 <span className="text-xs font-bold text-slate-700 block">Areas of Interest</span>
                 <div className="flex flex-wrap gap-1.5">
-                  {activeRequest.areas_of_interest.map((area, idx) => (
+                  {(activeRequest.interests || activeRequest.areas_of_interest).map((area, idx) => (
                     <span key={idx} className="bg-blue-50 text-[#0066CC] border border-blue-200 px-3 py-1 rounded-xl text-xs font-bold">
                       {area}
                     </span>
@@ -357,11 +357,11 @@ export default function AdminMembershipRequestsPage() {
             )}
 
             {/* Interest Reason */}
-            {activeRequest.interest_reason && (
+            {(activeRequest.statement || activeRequest.interest_reason) && (
               <div className="space-y-1.5 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <span className="text-xs font-bold text-slate-700 block">Statement / Reason for Joining</span>
                 <p className="text-xs text-slate-600 leading-relaxed font-normal">
-                  {activeRequest.interest_reason}
+                  {activeRequest.statement || activeRequest.interest_reason}
                 </p>
               </div>
             )}
