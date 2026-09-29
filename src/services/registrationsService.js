@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { API_BASE_URL } from '../lib/api';
 
 const LOCAL_REGISTRATIONS_KEY = 'site_acm_registrations_db';
 
@@ -62,6 +63,19 @@ function getLocalRegistrations() {
 export const registrationsService = {
   // Fetch all registrations
   async getRegistrations() {
+    if (API_BASE_URL) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/registrations`, {
+          headers: { 'x-admin-secret': 'site-acm-admin-secret' }
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('Backend registrations fetch failed, using fallback:', err);
+      }
+    }
+
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('event_registrations')
@@ -83,6 +97,22 @@ export const registrationsService = {
       registered_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
     };
+
+    if (API_BASE_URL) {
+      try {
+        const eventId = registrationData.event_id || 'general';
+        const res = await fetch(`${API_BASE_URL}/api/events/${eventId}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(record)
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('Backend API registration failed, checking Supabase/local:', err);
+      }
+    }
 
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase

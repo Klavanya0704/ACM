@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { API_BASE_URL } from '../lib/api';
 import { VERIFIED_EVENTS } from '../data/mockData';
 
 const LOCAL_EVENTS_KEY = 'site_acm_events_db';
@@ -46,6 +47,17 @@ function getLocalEvents() {
 export const eventsService = {
   // Fetch all events
   async getEvents() {
+    if (API_BASE_URL) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/events`);
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('Backend API connection failed, checking Supabase/local fallback:', err);
+      }
+    }
+
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('events')

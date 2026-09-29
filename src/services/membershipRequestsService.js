@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { API_BASE_URL } from '../lib/api';
 
 const LOCAL_REQUESTS_KEY = 'site_acm_membership_requests_db';
 
@@ -17,6 +18,19 @@ function getLocalRequests() {
 export const membershipRequestsService = {
   // Fetch all membership requests (for admin)
   async getRequests() {
+    if (API_BASE_URL) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/membership-requests`, {
+          headers: { 'x-admin-secret': 'site-acm-admin-secret' }
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('Backend API membership requests fetch failed:', err);
+      }
+    }
+
     if (isSupabaseConfigured && supabase) {
       try {
         const { data, error } = await supabase
@@ -50,6 +64,21 @@ export const membershipRequestsService = {
       status: 'pending',
       created_at: new Date().toISOString(),
     };
+
+    if (API_BASE_URL) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/membership-requests`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newRequest)
+        });
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (err) {
+        console.warn('Backend API membership submit failed, trying Supabase/local:', err);
+      }
+    }
 
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
