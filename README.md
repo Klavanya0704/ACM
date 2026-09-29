@@ -66,25 +66,36 @@ SITE-ACM/
 ## ⚡ Quick Start (Local Development)
 
 ### 1. Prerequisites
-- Node.js `v18.0.0+`
+- Node.js `v18.0.0+` (v20 LTS recommended)
 - npm `v9.0.0+`
 
-### 2. Setup
+### 2. Independent Two-Terminal Startup
+
+--------------------------------
+TERMINAL 1 — BACKEND
+--------------------------------
+
 ```bash
-# Clone the repository
-git clone https://github.com/Klavanya0704/ACM.git
-cd ACM
-
-# Install dependencies
+cd C:\Users\Lavanya\Downloads\ACM\backend
 npm install
-
-# Copy environment template
-cp .env.example .env
-
-# Start dev server
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+- **Backend**: [http://localhost:5000](http://localhost:5000)
+- **Health**: [http://localhost:5000/health](http://localhost:5000/health)
+
+--------------------------------
+TERMINAL 2 — FRONTEND
+--------------------------------
+
+```bash
+cd C:\Users\Lavanya\Downloads\ACM
+npm install
+npm run dev
+```
+
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Admin**: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
 
 ---
 

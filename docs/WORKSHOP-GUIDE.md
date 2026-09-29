@@ -83,3 +83,35 @@ Student -> Fills Membership Interest Form on /membership
 - **React Frontend**: Deployed on **Vercel** & **Netlify**
 - **Node.js Express API**: Deployed on **Render**
 - **Database & Auth**: Managed by **Supabase**
+
+---
+
+## 5. Live Demonstration Commands (Two-Terminal Workflow)
+
+--------------------------------
+TERMINAL 1 — BACKEND
+--------------------------------
+
+```bash
+cd C:\Users\Lavanya\Downloads\ACM\backend
+npm install
+npm run dev
+```
+
+- **Backend**: [http://localhost:5000](http://localhost:5000)
+- **Health**: [http://localhost:5000/health](http://localhost:5000/health)
+
+
+--------------------------------
+TERMINAL 2 — FRONTEND
+--------------------------------
+
+```bash
+cd C:\Users\Lavanya\Downloads\ACM
+npm install
+npm run dev
+```
+
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Admin**: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+
