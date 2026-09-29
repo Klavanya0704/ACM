@@ -47,10 +47,15 @@ export default function AdminMembersPage() {
 
   // Filter members by search query and category
   const filteredMembers = members.filter((m) => {
+    const isAcm = m.is_active !== undefined ? m.is_active : m.is_acm_member;
+    const year = m.year_of_study || m.year;
+    const role = m.acm_role || m.role;
+    const acmId = m.acm_member_id || m.acm_number;
+
     if (selectedFilter !== 'All') {
-      if (selectedFilter === 'ACM Members' && !m.is_acm_member) return false;
-      if (selectedFilter === 'Chapter Members' && m.is_acm_member) return false;
-      if (['1st Year', '2nd Year', '3rd Year', '4th Year'].includes(selectedFilter) && m.year !== selectedFilter) {
+      if (selectedFilter === 'ACM Members' && !isAcm) return false;
+      if (selectedFilter === 'Chapter Members' && isAcm) return false;
+      if (['1st Year', '2nd Year', '3rd Year', '4th Year'].includes(selectedFilter) && year !== selectedFilter) {
         return false;
       }
     }
@@ -59,8 +64,9 @@ export default function AdminMembersPage() {
       const q = searchQuery.toLowerCase().trim();
       const matchName = (m.name || '').toLowerCase().includes(q);
       const matchDept = (m.department || '').toLowerCase().includes(q);
-      const matchRole = (m.role || '').toLowerCase().includes(q);
-      return matchName || matchDept || matchRole;
+      const matchRole = (role || '').toLowerCase().includes(q);
+      const matchAcm = (acmId || '').toLowerCase().includes(q);
+      return matchName || matchDept || matchRole || matchAcm;
     }
 
     return true;
@@ -179,9 +185,9 @@ export default function AdminMembersPage() {
                     {/* Name & Avatar */}
                     <td className="py-4 px-6 font-bold text-slate-900">
                       <div className="flex items-center space-x-3">
-                        {m.photo_url ? (
+                        {m.image_url || m.photo_url ? (
                           <img
-                            src={m.photo_url}
+                            src={m.image_url || m.photo_url}
                             alt={m.name}
                             className="w-9 h-9 rounded-xl object-cover shrink-0 border border-slate-200"
                           />
@@ -199,7 +205,7 @@ export default function AdminMembersPage() {
 
                     {/* Academic Year */}
                     <td className="py-4 px-4 font-semibold text-slate-700 whitespace-nowrap">
-                      {m.year || '3rd Year'}
+                      {m.year_of_study || m.year || '3rd Year'}
                     </td>
 
                     {/* Department */}
@@ -209,10 +215,10 @@ export default function AdminMembersPage() {
 
                     {/* ACM Membership Status */}
                     <td className="py-4 px-4">
-                      {m.is_acm_member ? (
+                      {m.acm_member_id || m.acm_number || m.is_acm_member ? (
                         <span className="bg-emerald-50 text-emerald-700 font-bold px-2.5 py-1 rounded-lg border border-emerald-200 text-[10px] inline-flex items-center space-x-1">
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>ACM Member ({m.acm_number || 'International'})</span>
+                          <span>ACM Member ({m.acm_member_id || m.acm_number || 'International'})</span>
                         </span>
                       ) : (
                         <span className="bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded-lg text-[10px]">
@@ -223,7 +229,7 @@ export default function AdminMembersPage() {
 
                     {/* Role */}
                     <td className="py-4 px-4 font-medium text-slate-700">
-                      {m.role || 'Member'}
+                      {m.acm_role || m.role || 'Member'}
                     </td>
 
                     {/* Actions */}

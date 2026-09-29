@@ -16,13 +16,15 @@ let fallbackEvents = [
     location: 'SASI Institute of Technology & Engineering, Tadepalligudem',
     description: 'PRAYATNA 2.0 was an intensive internal hackathon organized by the SITE ACM Student Chapter in collaboration with the AITR ACM Student Chapter, Indore. Over 100 students participated in building innovative technology solutions across domains including Web, AI, and Mobile App Development.',
     speaker: 'SITE ACM Mentors',
+    speaker_title: 'Student Chapter Mentors',
     attendance: 100,
     volunteers_count: 15,
     collaboration: 'AITR ACM Student Chapter, Indore',
     registration_status: 'Completed',
     is_featured: true,
     is_upcoming: false,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'evt-2',
@@ -34,13 +36,15 @@ let fallbackEvents = [
     location: 'SASI Institute Auditorium, Tadepalligudem',
     description: 'A comprehensive guest lecture on Day-Zero vulnerability detection, ethical hacking, threat hunting, and modern cybersecurity defense strategies. Delivered by renowned academic expert Dr. Sibi Chakravarthi.',
     speaker: 'Dr. Sibi Chakravarthi (VIT-AP)',
+    speaker_title: 'Academic Expert',
     attendance: 200,
     volunteers_count: 29,
     collaboration: 'VIT-AP University Guest Lecture Series',
     registration_status: 'Completed',
     is_featured: true,
     is_upcoming: false,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 'evt-3',
@@ -52,15 +56,70 @@ let fallbackEvents = [
     location: 'ZPH Schools (Veerampalem & Kommugudem)',
     description: 'An impactful community outreach program where SITE ACM student volunteers visited rural ZPH Schools to introduce school students to programming logic and computational thinking.',
     speaker: 'SITE ACM Student Volunteers & Faculty Team',
+    speaker_title: 'Volunteers & Faculty',
     attendance: 120,
     volunteers_count: 26,
     collaboration: 'ZPH Schools Community Outreach',
     registration_status: 'Completed',
     is_featured: true,
     is_upcoming: false,
-    created_at: new Date().toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }
 ];
+
+function sanitizeEventPayload(body) {
+  const {
+    title,
+    slug,
+    category,
+    mode,
+    event_date,
+    date,
+    location,
+    description,
+    speaker,
+    speaker_name,
+    speaker_title,
+    speaker_designation,
+    attendance,
+    volunteers_count,
+    volunteers,
+    faculty_sponsors_count,
+    collaboration,
+    topics,
+    image_url,
+    image,
+    registration_status,
+    is_featured,
+    isFeatured,
+    is_upcoming,
+    isUpcoming
+  } = body;
+
+  const generatedSlug = slug || (title ? title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') : 'event-' + Date.now());
+
+  return {
+    title,
+    slug: generatedSlug,
+    category: category || 'Technical Event',
+    mode: mode || 'On Campus',
+    event_date: event_date || date || new Date().toISOString(),
+    location: location || 'SASI Campus',
+    description: description || '',
+    speaker: speaker || speaker_name || 'SITE ACM Mentors',
+    speaker_title: speaker_title || speaker_designation || null,
+    attendance: attendance !== undefined ? Number(attendance) : 0,
+    volunteers_count: volunteers_count !== undefined ? Number(volunteers_count) : (volunteers ? Number(volunteers) : 0),
+    faculty_sponsors_count: faculty_sponsors_count !== undefined ? Number(faculty_sponsors_count) : 0,
+    collaboration: collaboration || null,
+    topics: Array.isArray(topics) ? topics : (topics ? [topics] : []),
+    image_url: image_url || image || null,
+    registration_status: registration_status || 'Open',
+    is_featured: Boolean(is_featured || isFeatured),
+    is_upcoming: Boolean(is_upcoming || isUpcoming)
+  };
+}
 
 /**
  * GET /api/events
@@ -93,11 +152,14 @@ router.get('/:slug', async (req, res) => {
   const { slug } = req.params;
   try {
     if (isSupabaseBackendConfigured && supabaseAdmin) {
-      const { data, error } = await supabaseAdmin
-        .from('events')
-        .select('*')
-        .or(`slug.eq.${slug},id.eq.${slug}`)
-        .single();
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+      let query = supabaseAdmin.from('events').select('*');
+      if (isUUID) {
+        query = query.or(`slug.eq.${slug},id.eq.${slug}`);
+      } else {
+        query = query.eq('slug', slug);
+      }
+      const { data, error } = await query.maybeSingle();
 
       if (!error && data) {
         return res.json(data);
@@ -116,27 +178,15 @@ router.get('/:slug', async (req, res) => {
  * Admin: Create a new event
  */
 router.post('/admin', requireAdmin, async (req, res) => {
-  const { title, slug, category, mode, event_date, location, description, speaker, registration_status, image_url } = req.body;
+  const { title, category, location } = req.body;
 
   if (!title || !category || !location) {
     return res.status(400).json({ error: 'Bad Request', message: 'Title, category, and location are required.' });
   }
 
-  const generatedSlug = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-
+  const cleanPayload = sanitizeEventPayload(req.body);
   const newEvent = {
-    title,
-    slug: generatedSlug,
-    category,
-    mode: mode || 'On Campus',
-    event_date: event_date || new Date().toISOString(),
-    location,
-    description: description || '',
-    speaker: speaker || 'SITE ACM Mentors',
-    registration_status: registration_status || 'Open',
-    image_url: image_url || null,
-    is_featured: false,
-    is_upcoming: true,
+    ...cleanPayload,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
@@ -168,7 +218,8 @@ router.post('/admin', requireAdmin, async (req, res) => {
  */
 router.put('/admin/:id', requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const updates = { ...req.body, updated_at: new Date().toISOString() };
+  const cleanPayload = sanitizeEventPayload(req.body);
+  const updates = { ...cleanPayload, updated_at: new Date().toISOString() };
 
   try {
     if (isSupabaseBackendConfigured && supabaseAdmin) {

@@ -89,15 +89,19 @@ export default function MembersPage() {
 
   // Filter Logic for Section 2 (Student Members)
   const filteredStudents = studentMembers.filter((m) => {
-    if (selectedYear !== 'All' && m.year !== selectedYear) {
+    const memberYear = m.year_of_study || m.year;
+    const memberRole = m.acm_role || m.role;
+
+    if (selectedYear !== 'All' && memberYear !== selectedYear) {
       return false;
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       const matchName = (m.name || '').toLowerCase().includes(q);
-      const matchRole = (m.role || '').toLowerCase().includes(q);
-      return matchName || matchRole;
+      const matchRole = (memberRole || '').toLowerCase().includes(q);
+      const matchDept = (m.department || '').toLowerCase().includes(q);
+      return matchName || matchRole || matchDept;
     }
 
     return true;
@@ -347,9 +351,9 @@ export default function MembersPage() {
                     
                     {/* Initials Avatar & Role Tag */}
                     <div className="flex items-center justify-between">
-                      {member.photo_url ? (
+                      {member.image_url || member.photo_url ? (
                         <img
-                          src={member.photo_url}
+                          src={member.image_url || member.photo_url}
                           alt={member.name}
                           className="w-14 h-14 rounded-2xl object-cover border border-blue-200/80 shadow-sm"
                         />
@@ -360,7 +364,7 @@ export default function MembersPage() {
                       )}
 
                       <span className="text-[10px] font-extrabold text-[#0066CC] bg-blue-50 group-hover:bg-blue-100 px-2.5 py-1 rounded-full border border-blue-200/80 transition-colors uppercase tracking-wider">
-                        {member.role || 'CHAPTER MEMBER'}
+                        {member.acm_role || member.role || 'CHAPTER MEMBER'}
                       </span>
                     </div>
 
@@ -372,7 +376,7 @@ export default function MembersPage() {
 
                       <div className="flex items-center space-x-1.5 text-xs text-slate-600 font-semibold pt-1">
                         <GraduationCap className="w-4 h-4 text-[#0066CC] shrink-0" />
-                        <span>{member.year}</span>
+                        <span>{member.year_of_study || member.year}</span>
                       </div>
 
                       {/* Department display ONLY if provided */}

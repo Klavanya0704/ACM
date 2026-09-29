@@ -23,8 +23,6 @@ export default function AdminEventFormPage() {
     description: '',
     event_date: '',
     event_time: '10:00 AM',
-    badge_month: 'SEP',
-    badge_day: '30',
     category: 'Technical Event',
     location: 'SASI Campus',
     mode: 'In-Person',
@@ -49,20 +47,25 @@ export default function AdminEventFormPage() {
         try {
           const evt = await eventsService.getEventById(id);
           if (evt) {
+            let parsedDate = '';
+            if (evt.event_date || evt.date) {
+              const d = new Date(evt.event_date || evt.date);
+              if (!isNaN(d.getTime())) {
+                parsedDate = d.toISOString().split('T')[0];
+              }
+            }
             setFormData({
               title: evt.title || '',
               slug: evt.slug || '',
               description: evt.description || '',
-              event_date: evt.event_date || evt.date || '',
+              event_date: parsedDate,
               event_time: evt.event_time || evt.time || '10:00 AM',
-              badge_month: evt.badge_month || evt.badgeMonth || 'SEP',
-              badge_day: evt.badge_day || evt.badgeDay || '30',
               category: evt.category || 'Technical Event',
               location: evt.location || 'SASI Campus',
               mode: evt.mode || 'In-Person',
               image_url: evt.image_url || evt.image || '',
-              speaker_name: evt.speaker_name || evt.speaker || '',
-              speaker_designation: evt.speaker_designation || evt.speakerTitle || '',
+              speaker_name: evt.speaker || evt.speaker_name || '',
+              speaker_designation: evt.speaker_title || evt.speaker_designation || '',
               registration_fee: evt.registration_fee || 'Free',
               max_participants: evt.max_participants || 150,
               registration_status: evt.registration_status || 'Open',
@@ -85,7 +88,7 @@ export default function AdminEventFormPage() {
     setFormData(prev => ({
       ...prev,
       title: val,
-      slug: isEdit ? prev.slug : val.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-'),
+      slug: isEdit ? prev.slug : val.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
     }));
   };
 
@@ -112,20 +115,29 @@ export default function AdminEventFormPage() {
         finalImageUrl = await eventsService.uploadImage(imageFile);
       }
 
-      // Format badge date helper
-      let bMonth = formData.badge_month;
-      let bDay = formData.badge_day;
+      // Convert date to ISO timestamp
+      let isoDate = new Date().toISOString();
       if (formData.event_date) {
         const d = new Date(formData.event_date);
-        bMonth = d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-        bDay = String(d.getDate()).padStart(2, '0');
+        if (!isNaN(d.getTime())) {
+          isoDate = d.toISOString();
+        }
       }
 
       const payload = {
-        ...formData,
+        title: formData.title,
+        slug: formData.slug || formData.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
+        category: formData.category,
+        mode: formData.mode,
+        event_date: isoDate,
+        location: formData.location,
+        description: formData.description,
+        speaker: formData.speaker_name || 'SITE ACM Mentors',
+        speaker_title: formData.speaker_designation || '',
+        registration_status: formData.registration_status,
         image_url: finalImageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1000&q=80',
-        badge_month: bMonth,
-        badge_day: bDay,
+        is_upcoming: formData.registration_status !== 'Closed',
+        is_featured: false,
       };
 
       if (isEdit) {
@@ -298,7 +310,7 @@ export default function AdminEventFormPage() {
                 onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
               >
-                <option value="In-Person">In-Person</option>
+                <option value="On Campus">On Campus</option>
                 <option value="Online">Online</option>
                 <option value="Hybrid">Hybrid</option>
               </select>
@@ -404,32 +416,6 @@ export default function AdminEventFormPage() {
                 placeholder="e.g. Head of CSE / ACM Senior Member"
                 value={formData.speaker_designation}
                 onChange={(e) => setFormData({ ...formData, speaker_designation: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Registration Fee
-              </label>
-              <input
-                type="text"
-                placeholder="Free or ₹100"
-                value={formData.registration_fee}
-                onChange={(e) => setFormData({ ...formData, registration_fee: e.target.value })}
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Maximum Participants
-              </label>
-              <input
-                type="number"
-                placeholder="150"
-                value={formData.max_participants}
-                onChange={(e) => setFormData({ ...formData, max_participants: Number(e.target.value) })}
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600 focus:bg-white"
               />
             </div>

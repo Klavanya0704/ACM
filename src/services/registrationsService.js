@@ -3,6 +3,8 @@ import { API_BASE_URL } from '../lib/api';
 
 const LOCAL_REGISTRATIONS_KEY = 'site_acm_registrations_db';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Initial sample registrations for demo preview if database is empty
 function getLocalRegistrations() {
   const stored = localStorage.getItem(LOCAL_REGISTRATIONS_KEY);
@@ -17,7 +19,7 @@ function getLocalRegistrations() {
   const initialRegistrations = [
     {
       id: 'reg-101',
-      event_id: 'code-to-cloud',
+      event_id: null,
       event_title: 'Code to Cloud',
       full_name: 'Kolluri Durga Sai Lavanya',
       email: 'lavanya.k@sasi.ac.in',
@@ -30,7 +32,7 @@ function getLocalRegistrations() {
     },
     {
       id: 'reg-102',
-      event_id: 'code-to-cloud',
+      event_id: null,
       event_title: 'Code to Cloud',
       full_name: 'Manuri Susatwik',
       email: 'susatwik.m@sasi.ac.in',
@@ -43,7 +45,7 @@ function getLocalRegistrations() {
     },
     {
       id: 'reg-103',
-      event_id: 'hour-of-code',
+      event_id: null,
       event_title: 'Hour of Code - Special Edition',
       full_name: 'Akhil Kumar Yandamuri',
       email: 'akhil.y@sasi.ac.in',
@@ -91,17 +93,28 @@ export const registrationsService = {
 
   // Submit new registration from public event detail page
   async registerForEvent(registrationData) {
+    const validEventId = registrationData.event_id && UUID_REGEX.test(registrationData.event_id)
+      ? registrationData.event_id
+      : null;
+
     const record = {
-      ...registrationData,
+      event_id: validEventId,
+      event_title: registrationData.event_title || 'SITE Event',
+      full_name: registrationData.full_name,
+      email: registrationData.email,
+      roll_number: registrationData.roll_number || null,
+      department: registrationData.department || 'Computer Science & Engineering',
+      year: registrationData.year || '3rd Year',
+      phone: registrationData.phone || '',
+      college: registrationData.college || 'Sasi Institute of Technology & Engineering',
       status: 'Registered',
       registered_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
     };
 
     if (API_BASE_URL) {
       try {
-        const eventId = registrationData.event_id || 'general';
-        const res = await fetch(`${API_BASE_URL}/api/events/${eventId}/register`, {
+        const eventParam = registrationData.event_id || 'general';
+        const res = await fetch(`${API_BASE_URL}/api/events/${eventParam}/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(record)
@@ -136,7 +149,7 @@ export const registrationsService = {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('event_registrations')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update({ status: newStatus })
         .eq('id', id)
         .select();
 
