@@ -16,14 +16,18 @@ This script will verify Node.js, npm, and Git, install dependencies, and prepare
 
 ## Manual Execution (Two-Terminal Workflow)
 
-### Terminal 1: Express Backend API Server
-Open Terminal 1 in VS Code or Command Prompt:
+--------------------------------
+TERMINAL 1 — BACKEND
+--------------------------------
 
 ```bash
 cd C:\Users\Lavanya\Downloads\ACM\backend
 npm install
 npm run dev
 ```
+
+- **Backend**: [http://localhost:5000](http://localhost:5000)
+- **Health**: [http://localhost:5000/health](http://localhost:5000/health)
 
 **Expected Output:**
 ```
@@ -33,13 +37,9 @@ npm run dev
 ========================================================
 ```
 
-Verify backend health in browser or terminal:
-[http://localhost:5000/health](http://localhost:5000/health)
-
----
-
-### Terminal 2: React Vite Frontend Application
-Open Terminal 2 (leave Terminal 1 running in background):
+--------------------------------
+TERMINAL 2 — FRONTEND
+--------------------------------
 
 ```bash
 cd C:\Users\Lavanya\Downloads\ACM
@@ -47,12 +47,15 @@ npm install
 npm run dev
 ```
 
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Admin**: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
+
 **Expected Output:**
 ```
-  VITE v6.1.0  ready in 350 ms
+  VITE v6.4.3  ready in 164 ms
 
   ➜  Local:   http://localhost:3000/
-  ➜  Network: use --host to expose
+  ➜  Network: http://192.168.x.x:3000/
   ➜  press h + enter to show help
 ```
 

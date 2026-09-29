@@ -68,21 +68,34 @@ This script will check your environment and install all dependencies for both Fr
 
 ---
 
-## Step 5: Start Local Application
+## Step 5: Start Local Application (Two-Terminal Workflow)
 
-### Terminal 1: Start Backend API
+--------------------------------
+TERMINAL 1 — BACKEND
+--------------------------------
+
 ```bash
-cd backend
+cd C:\Users\Lavanya\Downloads\ACM\backend
+npm install
 npm run dev
 ```
-Verify health check at: [http://localhost:5000/health](http://localhost:5000/health).
 
-### Terminal 2: Start Frontend Application
-Open a second terminal window:
+- **Backend**: [http://localhost:5000](http://localhost:5000)
+- **Health**: [http://localhost:5000/health](http://localhost:5000/health)
+
+
+--------------------------------
+TERMINAL 2 — FRONTEND
+--------------------------------
+
 ```bash
+cd C:\Users\Lavanya\Downloads\ACM
+npm install
 npm run dev
 ```
-Open public website at: [http://localhost:3000](http://localhost:3000).
+
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Admin**: [http://localhost:3000/admin/login](http://localhost:3000/admin/login)
 
 ---
 
