@@ -1,8 +1,67 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { API_BASE_URL } from '../lib/api';
-import { VERIFIED_EVENTS } from '../data/mockData';
+import { supabase, isSupabaseConfigured } from '../lib/supabase.js';
+import { API_BASE_URL } from '../lib/api.js';
+import { VERIFIED_EVENTS } from '../data/mockData.js';
 
 const LOCAL_EVENTS_KEY = 'site_acm_events_db';
+
+// Helper to derive badge month & day from a date string
+export function deriveEventBadge(dateStr) {
+  if (!dateStr) return { badgeMonth: 'TBD', badgeDay: '--' };
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return { badgeMonth: 'TBD', badgeDay: '--' };
+  return {
+    badgeMonth: d.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+    badgeDay: String(d.getDate()).padStart(2, '0')
+  };
+}
+
+// Normalizer to attach UI convenience properties while preserving DB fidelity
+export function normalizeEvent(evt) {
+  if (!evt) return null;
+  const rawDate = evt.event_date || evt.date || '2026-09-30';
+  const { badgeMonth, badgeDay } = deriveEventBadge(rawDate);
+
+  return {
+    ...evt,
+    event_date: rawDate,
+    date: rawDate,
+    badgeMonth: evt.badgeMonth || evt.badge_month || badgeMonth,
+    badgeDay: evt.badgeDay || evt.badge_day || badgeDay,
+    speaker: evt.speaker || evt.speaker_name || '',
+    speaker_title: evt.speaker_title || evt.speaker_designation || '',
+    volunteers_count: evt.volunteers_count !== undefined ? evt.volunteers_count : (evt.volunteers || 0),
+    image_url: evt.image_url || evt.image || '',
+  };
+}
+
+// Helper to extract only canonical PostgreSQL columns defined in 20260929000000_site_acm_schema.sql
+function sanitizeEventPayload(eventData) {
+  const slug = eventData.slug || (eventData.title ? eventData.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') : 'event-' + Date.now());
+  const rawDate = eventData.event_date || eventData.date || new Date().toISOString();
+
+  const payload = {
+    title: eventData.title,
+    slug,
+    category: eventData.category || 'Technical Event',
+    mode: eventData.mode || 'On Campus',
+    event_date: rawDate,
+    location: eventData.location || 'SASI Campus',
+    description: eventData.description || '',
+    speaker: eventData.speaker || eventData.speaker_name || null,
+    speaker_title: eventData.speaker_title || eventData.speaker_designation || null,
+    attendance: eventData.attendance !== undefined ? Number(eventData.attendance) : 0,
+    volunteers_count: eventData.volunteers_count !== undefined ? Number(eventData.volunteers_count) : (eventData.volunteers ? Number(eventData.volunteers) : 0),
+    faculty_sponsors_count: eventData.faculty_sponsors_count !== undefined ? Number(eventData.faculty_sponsors_count) : 0,
+    collaboration: eventData.collaboration || null,
+    topics: Array.isArray(eventData.topics) ? eventData.topics : (eventData.topics ? [eventData.topics] : []),
+    image_url: eventData.image_url || eventData.image || null,
+    registration_status: eventData.registration_status || 'Open',
+    is_featured: Boolean(eventData.is_featured || eventData.isFeatured),
+    is_upcoming: Boolean(eventData.is_upcoming || eventData.isUpcoming),
+  };
+
+  return payload;
+}
 
 // Helper to initialize local storage with mock events if empty
 function getLocalEvents() {
@@ -15,29 +74,27 @@ function getLocalEvents() {
     }
   }
   // Transform VERIFIED_EVENTS format for standard schema consistency
-  const initialEvents = VERIFIED_EVENTS.map(evt => ({
+  const initialEvents = VERIFIED_EVENTS.map(evt => normalizeEvent({
     id: evt.id,
     title: evt.title,
     slug: evt.slug || evt.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     description: evt.description,
     event_date: evt.date || '2026-09-30',
-    event_time: evt.time || '10:00 AM',
-    badge_month: evt.badgeMonth || 'SEP',
-    badge_day: evt.badgeDay || '30',
     category: evt.category || 'Technical Event',
     location: evt.location || 'SASI Campus',
-    mode: evt.mode || 'In-Person',
+    mode: evt.mode || 'On Campus',
     image_url: evt.image,
-    speaker_name: evt.speaker || '',
-    speaker_designation: evt.speakerTitle || '',
-    registration_fee: 'Free',
-    max_participants: 150,
-    registration_status: 'Open',
+    speaker: evt.speaker || '',
+    speaker_title: evt.speakerTitle || '',
+    registration_status: evt.registration_status || 'Open',
     attendance: evt.attendance || 0,
-    volunteers: evt.volunteers || 0,
+    volunteers_count: evt.volunteers || 0,
     topics: evt.topics || [],
     collaboration: evt.collaboration || '',
-    created_at: new Date().toISOString()
+    is_featured: Boolean(evt.isFeatured),
+    is_upcoming: Boolean(evt.isUpcoming),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   }));
 
   localStorage.setItem(LOCAL_EVENTS_KEY, JSON.stringify(initialEvents));
@@ -51,7 +108,10 @@ export const eventsService = {
       try {
         const res = await fetch(`${API_BASE_URL}/api/events`);
         if (res.ok) {
-          return await res.json();
+          const apiData = await res.json();
+          if (Array.isArray(apiData) && apiData.length > 0) {
+            return apiData.map(normalizeEvent);
+          }
         }
       } catch (err) {
         console.warn('Backend API connection failed, checking Supabase/local fallback:', err);
@@ -65,10 +125,10 @@ export const eventsService = {
         .order('event_date', { ascending: false });
 
       if (!error && data && data.length > 0) {
-        return data;
+        return data.map(normalizeEvent);
       }
     }
-    return getLocalEvents();
+    return getLocalEvents().map(normalizeEvent);
   },
 
   // Get single event by slug or id
@@ -77,13 +137,14 @@ export const eventsService = {
       const { data, error } = await supabase
         .from('events')
         .select('*')
-        .eq('slug', slug)
-        .single();
+        .or(`slug.eq.${slug},id.eq.${slug}`)
+        .maybeSingle();
 
-      if (!error && data) return data;
+      if (!error && data) return normalizeEvent(data);
     }
     const events = getLocalEvents();
-    return events.find(e => e.slug === slug || e.id === slug) || null;
+    const found = events.find(e => e.slug === slug || e.id === slug) || null;
+    return normalizeEvent(found);
   },
 
   // Get single event by id
@@ -93,20 +154,20 @@ export const eventsService = {
         .from('events')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (!error && data) return data;
+      if (!error && data) return normalizeEvent(data);
     }
     const events = getLocalEvents();
-    return events.find(e => e.id === id) || null;
+    const found = events.find(e => e.id === id) || null;
+    return normalizeEvent(found);
   },
 
   // Create new event
   async createEvent(eventData) {
-    const slug = eventData.slug || eventData.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-');
+    const canonicalPayload = sanitizeEventPayload(eventData);
     const newEvent = {
-      ...eventData,
-      slug,
+      ...canonicalPayload,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -118,20 +179,21 @@ export const eventsService = {
         .select();
 
       if (error) throw error;
-      return data[0];
+      return normalizeEvent(data[0]);
     } else {
       const events = getLocalEvents();
       newEvent.id = 'evt-' + Date.now();
       events.unshift(newEvent);
       localStorage.setItem(LOCAL_EVENTS_KEY, JSON.stringify(events));
-      return newEvent;
+      return normalizeEvent(newEvent);
     }
   },
 
   // Update event
   async updateEvent(id, eventData) {
+    const canonicalPayload = sanitizeEventPayload(eventData);
     const updated = {
-      ...eventData,
+      ...canonicalPayload,
       updated_at: new Date().toISOString(),
     };
 
@@ -143,14 +205,14 @@ export const eventsService = {
         .select();
 
       if (error) throw error;
-      return data[0];
+      return normalizeEvent(data[0]);
     } else {
       const events = getLocalEvents();
       const index = events.findIndex(e => e.id === id);
       if (index !== -1) {
         events[index] = { ...events[index], ...updated };
         localStorage.setItem(LOCAL_EVENTS_KEY, JSON.stringify(events));
-        return events[index];
+        return normalizeEvent(events[index]);
       }
       throw new Error('Event not found');
     }

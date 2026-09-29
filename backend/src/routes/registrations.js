@@ -4,6 +4,8 @@ import { requireAdmin } from '../middleware/auth.js';
 
 const router = Router();
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 let fallbackRegistrations = [];
 
 /**
@@ -21,12 +23,14 @@ router.post('/events/:eventId/register', async (req, res) => {
     });
   }
 
+  const validEventId = eventId && UUID_REGEX.test(eventId) ? eventId : null;
+
   const registrationRecord = {
-    event_id: eventId,
+    event_id: validEventId,
     event_title: event_title || 'SITE Event',
     full_name,
     email,
-    roll_number: roll_number || '',
+    roll_number: roll_number || null,
     department: department || 'Computer Science & Engineering',
     year: year || '3rd Year',
     phone: phone || '',

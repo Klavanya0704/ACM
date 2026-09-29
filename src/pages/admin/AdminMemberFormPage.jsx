@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Upload, Users, ShieldCheck, UserCheck } from 'lucide-react';
+import { ArrowLeft, Save, Upload, ShieldCheck } from 'lucide-react';
 import { membersService } from '../../services/membersService';
 
 export default function AdminMemberFormPage() {
@@ -14,18 +14,17 @@ export default function AdminMemberFormPage() {
 
   const [formData, setFormData] = useState({
     name: '',
-    year: '4th Year',
-    department: '',
-    is_acm_member: true,
-    acm_number: '',
-    role: 'CHAPTER MEMBER',
-    email: '',
-    photo_url: '',
+    year_of_study: '4th Year',
+    department: 'Computer Science & Engineering',
+    is_active: true,
+    acm_member_id: '',
+    acm_role: 'CHAPTER MEMBER',
+    image_url: '',
+    joined_date: '',
   });
 
   const yearsOptions = ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Faculty'];
   const departmentOptions = [
-    'Not Specified',
     'Computer Science & Engineering',
     'Artificial Intelligence & Data Science',
     'Information Technology',
@@ -43,13 +42,13 @@ export default function AdminMemberFormPage() {
           if (data) {
             setFormData({
               name: data.name || '',
-              year: data.year || '3rd Year',
+              year_of_study: data.year_of_study || data.year || '3rd Year',
               department: data.department || 'Computer Science & Engineering',
-              is_acm_member: Boolean(data.is_acm_member),
-              acm_number: data.acm_number || '',
-              role: data.role || '',
-              email: data.email || '',
-              photo_url: data.photo_url || '',
+              is_active: data.is_active !== undefined ? Boolean(data.is_active) : true,
+              acm_member_id: data.acm_member_id || data.acm_number || '',
+              acm_role: data.acm_role || data.role || 'CHAPTER MEMBER',
+              image_url: data.image_url || data.photo_url || '',
+              joined_date: data.joined_date || '',
             });
           } else {
             setErrorMsg('Member profile not found.');
@@ -80,7 +79,7 @@ export default function AdminMemberFormPage() {
     try {
       setSaving(true);
       const url = await membersService.uploadPhoto(file);
-      setFormData((prev) => ({ ...prev, photo_url: url }));
+      setFormData((prev) => ({ ...prev, image_url: url }));
     } catch (err) {
       console.error('Photo upload error:', err);
       alert('Photo upload failed: ' + err.message);
@@ -100,10 +99,21 @@ export default function AdminMemberFormPage() {
     setErrorMsg('');
 
     try {
+      const payload = {
+        name: formData.name.trim(),
+        department: formData.department || 'Computer Science & Engineering',
+        year_of_study: formData.year_of_study || '3rd Year',
+        acm_role: formData.acm_role || 'CHAPTER MEMBER',
+        acm_member_id: formData.acm_member_id ? formData.acm_member_id.trim() : null,
+        image_url: formData.image_url || null,
+        joined_date: formData.joined_date || null,
+        is_active: Boolean(formData.is_active),
+      };
+
       if (isEditing) {
-        await membersService.updateMember(id, formData);
+        await membersService.updateMember(id, payload);
       } else {
-        await membersService.createMember(formData);
+        await membersService.createMember(payload);
       }
       navigate('/admin/members');
     } catch (err) {
@@ -140,14 +150,14 @@ export default function AdminMemberFormPage() {
               {isEditing ? 'Edit Member Profile' : 'Add New Chapter Member'}
             </h1>
             <p className="text-xs text-slate-500">
-              {isEditing ? 'Update existing member information and photo.' : 'Add a new verified student or faculty member.'}
+              Manage official SITE ACM Chapter member profiles listed on the verified roster.
             </p>
           </div>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl text-xs font-bold">
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-2xl text-xs font-semibold">
           {errorMsg}
         </div>
       )}
@@ -159,26 +169,26 @@ export default function AdminMemberFormPage() {
           
           {/* Member Name */}
           <div className="space-y-1.5 sm:col-span-2">
-            <label className="text-xs font-bold text-slate-700">Full Name *</label>
+            <label className="text-xs font-bold text-slate-700">Member Full Name *</label>
             <input
               type="text"
               name="name"
               required
               value={formData.name}
               onChange={handleChange}
-              placeholder="e.g. M. Satish Kumar"
-              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50"
+              placeholder="e.g. K. Sruthi"
+              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50 text-slate-900 font-medium"
             />
           </div>
 
           {/* Academic Year */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">Academic Year</label>
+            <label className="text-xs font-bold text-slate-700">Year of Study *</label>
             <select
-              name="year"
-              value={formData.year}
+              name="year_of_study"
+              value={formData.year_of_study}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50"
+              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50 text-slate-900 font-medium"
             >
               {yearsOptions.map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -188,12 +198,12 @@ export default function AdminMemberFormPage() {
 
           {/* Department */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">Department</label>
+            <label className="text-xs font-bold text-slate-700">Department *</label>
             <select
               name="department"
               value={formData.department}
               onChange={handleChange}
-              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50"
+              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50 text-slate-900 font-medium"
             >
               {departmentOptions.map((d) => (
                 <option key={d} value={d}>{d}</option>
@@ -201,75 +211,72 @@ export default function AdminMemberFormPage() {
             </select>
           </div>
 
-          {/* Email */}
+          {/* Role */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">Email Address</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="e.g. satish.m@sasi.ac.in"
-              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50"
-            />
-          </div>
-
-          {/* Optional Role */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700">Role (Optional)</label>
+            <label className="text-xs font-bold text-slate-700">Chapter Role</label>
             <input
               type="text"
-              name="role"
-              value={formData.role}
+              name="acm_role"
+              value={formData.acm_role}
               onChange={handleChange}
-              placeholder="e.g. Chapter Member, Executive Member, Web Lead"
-              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50"
+              placeholder="e.g. CHAPTER MEMBER, Web Lead, Executive Member"
+              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50 text-slate-900 font-medium"
             />
           </div>
 
-          {/* ACM Membership Toggle */}
+          {/* Joined Date */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-700">Joined Date (Optional)</label>
+            <input
+              type="date"
+              name="joined_date"
+              value={formData.joined_date}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50 text-slate-900 font-medium"
+            />
+          </div>
+
+          {/* Active Status Toggle */}
           <div className="space-y-1.5 sm:col-span-2 bg-blue-50/70 p-4 rounded-2xl border border-blue-100 flex items-center justify-between">
             <div>
               <div className="text-xs font-bold text-slate-900 flex items-center space-x-1.5">
                 <ShieldCheck className="w-4 h-4 text-[#0066CC]" />
-                <span>ACM International Member</span>
+                <span>Active Member Status</span>
               </div>
               <div className="text-[11px] text-slate-500">
-                Check if the student has a registered ACM global membership card number.
+                Mark as active verified student member of SITE ACM Student Chapter.
               </div>
             </div>
 
             <input
               type="checkbox"
-              name="is_acm_member"
-              checked={formData.is_acm_member}
+              name="is_active"
+              checked={formData.is_active}
               onChange={handleChange}
               className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
             />
           </div>
 
-          {/* ACM Member Number */}
-          {formData.is_acm_member && (
-            <div className="space-y-1.5 sm:col-span-2">
-              <label className="text-xs font-bold text-slate-700">ACM Member Number (Optional)</label>
-              <input
-                type="text"
-                name="acm_number"
-                value={formData.acm_number}
-                onChange={handleChange}
-                placeholder="e.g. ACM-8492019"
-                className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50"
-              />
-            </div>
-          )}
+          {/* ACM Member ID */}
+          <div className="space-y-1.5 sm:col-span-2">
+            <label className="text-xs font-bold text-slate-700">ACM Member ID / Number (Optional)</label>
+            <input
+              type="text"
+              name="acm_member_id"
+              value={formData.acm_member_id}
+              onChange={handleChange}
+              placeholder="e.g. ACM-IN-2024-001"
+              className="w-full px-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50 text-slate-900 font-mono"
+            />
+          </div>
 
           {/* Profile Photo Upload */}
           <div className="space-y-2 sm:col-span-2">
             <label className="text-xs font-bold text-slate-700">Profile Photo</label>
             <div className="flex items-center space-x-4">
-              {formData.photo_url ? (
+              {formData.image_url ? (
                 <img
-                  src={formData.photo_url}
+                  src={formData.image_url}
                   alt="Preview"
                   className="w-16 h-16 rounded-2xl object-cover border border-slate-200 shadow-sm"
                 />

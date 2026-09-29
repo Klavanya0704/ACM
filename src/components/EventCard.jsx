@@ -1,10 +1,29 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
-import { MapPin, ArrowRight, Tag, Users, Sparkles } from 'lucide-react';
+import { MapPin, ArrowRight, Sparkles, Users } from 'lucide-react';
 
 export default function EventCard({ event, index = 0 }) {
   const shouldReduceMotion = useReducedMotion();
+
+  const bannerImage = event.image || event.image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1000&q=80';
+  
+  // Dynamically derive date badge from canonical event_date or date string
+  let badgeMonth = event.badgeMonth || event.badge_month;
+  let badgeDay = event.badgeDay || event.badge_day;
+
+  if (!badgeMonth || !badgeDay) {
+    const rawDate = event.event_date || event.date;
+    if (rawDate) {
+      const d = new Date(rawDate);
+      if (!isNaN(d.getTime())) {
+        badgeMonth = badgeMonth || d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+        badgeDay = badgeDay || String(d.getDate()).padStart(2, '0');
+      }
+    }
+    badgeMonth = badgeMonth || 'TBD';
+    badgeDay = badgeDay || '--';
+  }
 
   return (
     <motion.div
@@ -18,7 +37,7 @@ export default function EventCard({ event, index = 0 }) {
       {/* 16:9 Banner Image Container */}
       <div className="relative aspect-video overflow-hidden bg-slate-100 shrink-0">
         <img
-          src={event.image}
+          src={bannerImage}
           alt={event.title}
           className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500 ease-out"
         />
@@ -26,10 +45,10 @@ export default function EventCard({ event, index = 0 }) {
         {/* Floating Overlapping Date Badge */}
         <div className="absolute bottom-3 left-4 bg-white/95 backdrop-blur-md rounded-xl px-3.5 py-1.5 shadow-lg border border-slate-200/80 text-center space-y-0.5">
           <span className="block text-[10px] font-extrabold uppercase tracking-wider text-[#0066CC]">
-            {event.badgeMonth}
+            {badgeMonth}
           </span>
           <span className="block text-lg font-black text-[#071A3D] leading-none">
-            {event.badgeDay}
+            {badgeDay}
           </span>
           <div className="h-0.5 w-full bg-[#0066CC] rounded-full mt-1"></div>
         </div>
